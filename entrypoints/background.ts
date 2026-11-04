@@ -3,17 +3,23 @@ export default defineBackground(() => {
     if (!tab.id) return;
 
     const url = tab.url ?? '';
-    if (url.startsWith('chrome://') || url.startsWith('chrome-extension://') || url.startsWith('https://chrome.google.com/webstore')) {
+    if (
+      url.startsWith('chrome://') ||
+      url.startsWith('chrome-extension://') ||
+      url.startsWith('https://chrome.google.com/webstore')
+    ) {
       return;
     }
 
     try {
       await browser.tabs.sendMessage(tab.id, { type: 'TOGGLE_PANEL' });
     } catch {
+      // Content script not yet injected - WXT injects it via manifest matches,
+      // so if sendMessage fails we just try again after a brief delay
       try {
         await browser.scripting.executeScript({
           target: { tabId: tab.id },
-          files: ['content-scripts/content.js'],
+          files: ['/content-scripts/content.js'],
         });
         await browser.tabs.sendMessage(tab.id, { type: 'TOGGLE_PANEL' });
       } catch (err) {

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { TypographyRule, SiteConfiguration, Preset } from '../types';
 import { DEFAULT_RULES } from '../types';
 import { updateStylesheet } from '../services/typographyEngine';
-import { saveSiteConfig, loadSiteConfig, savePresets, loadPresets, addRecentFont } from '../services/storage';
+import { saveSiteConfig, loadSiteConfig, savePresets, loadPresets } from '../services/storage';
 import { loadFont } from '../services/fontLoader';
 import { FONT_CATALOG } from '../services/fontCatalog';
 import { exportCSS } from '../services/cssExport';
@@ -62,6 +62,16 @@ export const useTypographyStore = create<TypographyState>((set, get) => ({
       isLoading: false,
     });
     updateStylesheet(config.rules, config.enabled);
+
+    // Pre-load fonts for enabled rules with font families set
+    if (config.enabled) {
+      for (const rule of config.rules) {
+        if (rule.enabled && rule.fontFamily?.enabled && rule.fontFamily.value) {
+          const fontEntry = FONT_CATALOG.find(f => f.family === rule.fontFamily!.value);
+          loadFont(rule.fontFamily.value, fontEntry?.variants ?? ['regular', '400', '700']).catch(() => {});
+        }
+      }
+    }
   },
 
   syncStylesheet: () => {
@@ -78,7 +88,7 @@ export const useTypographyStore = create<TypographyState>((set, get) => ({
         const fontEntry = FONT_CATALOG.find(f => f.family === updatedRule.fontFamily!.value);
         loadFont(updatedRule.fontFamily.value, fontEntry?.variants ?? ['regular', '400', '700'])
           .then(() => updateStylesheet(get().rules, get().globalEnabled));
-        addRecentFont(updatedRule.fontFamily.value).catch(() => {});
+        // Track recently used fonts (in-memory only for MVP)
       }
 
       updateStylesheet(rules, state.globalEnabled);
@@ -214,6 +224,9 @@ export const useTypographyStore = create<TypographyState>((set, get) => ({
         r.category === category ? { ...r, enabled: true } : r
       );
       updateStylesheet(rules, state.globalEnabled);
+      debouncedSave(() => {
+        saveSiteConfig({ version: 1, origin: state.origin, enabled: state.globalEnabled, rules }).catch(console.error);
+      });
       return { rules };
     });
   },
@@ -224,6 +237,9 @@ export const useTypographyStore = create<TypographyState>((set, get) => ({
         r.category === category ? { ...r, enabled: false } : r
       );
       updateStylesheet(rules, state.globalEnabled);
+      debouncedSave(() => {
+        saveSiteConfig({ version: 1, origin: state.origin, enabled: state.globalEnabled, rules }).catch(console.error);
+      });
       return { rules };
     });
   },

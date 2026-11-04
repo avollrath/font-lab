@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(git --version)",
+      "Bash(npm create *)",
+      "Bash(npm search *)",
+      "Bash(node -e ' *)",
+      "Bash(npm test *)",
+      "Bash(git config *)"
+    ]
+  }
+}

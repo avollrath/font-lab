@@ -1,8 +1,11 @@
-// Mock chrome API
-const chromeMock = {
+// Mock browser/chrome storage APIs for tests
+const storageMock = {
   storage: {
     local: {
-      get: async (key: string | string[]) => ({ [Array.isArray(key) ? key[0] : key]: undefined }),
+      get: async (key: string | string[] | Record<string, unknown>) => {
+        const k = typeof key === 'string' ? key : Array.isArray(key) ? key[0] : Object.keys(key)[0];
+        return { [k as string]: undefined };
+      },
       set: async () => {},
       remove: async () => {},
     },
@@ -27,7 +30,7 @@ const chromeMock = {
   },
 };
 
-Object.defineProperty(global, 'chrome', {
-  value: chromeMock,
-  writable: true,
-});
+// @ts-expect-error - test mock
+globalThis.chrome = storageMock;
+// @ts-expect-error - test mock
+globalThis.browser = storageMock;
