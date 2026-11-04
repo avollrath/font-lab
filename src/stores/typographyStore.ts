@@ -24,6 +24,7 @@ interface TypographyState {
   setGlobalEnabled: (enabled: boolean) => void;
   addCustomRule: (rule: TypographyRule) => void;
   removeCustomRule: (id: string) => void;
+  copyRuleTo: (fromId: string, toIds: string[]) => void;
   savePreset: (name: string) => void;
   applyPreset: (preset: Preset) => void;
   deletePreset: (id: string) => void;
@@ -169,6 +170,31 @@ export const useTypographyStore = create<TypographyState>((set, get) => ({
   addCustomRule: (rule: TypographyRule) => {
     set(state => {
       const rules = [...state.rules, rule];
+      updateStylesheet(rules, state.globalEnabled);
+      debouncedSave(() => {
+        saveSiteConfig({ version: 1, origin: state.origin, enabled: state.globalEnabled, rules }).catch(console.error);
+      });
+      return { rules };
+    });
+  },
+
+  copyRuleTo: (fromId: string, toIds: string[]) => {
+    set(state => {
+      const source = state.rules.find(r => r.id === fromId);
+      if (!source || toIds.length === 0) return {};
+      const rules = state.rules.map(r => {
+        if (!toIds.includes(r.id)) return r;
+        return {
+          ...r,
+          fontFamily: source.fontFamily ? { ...source.fontFamily } : undefined,
+          fontSize: source.fontSize ? { ...source.fontSize } : undefined,
+          fontWeight: source.fontWeight ? { ...source.fontWeight } : undefined,
+          lineHeight: source.lineHeight ? { ...source.lineHeight } : undefined,
+          letterSpacing: source.letterSpacing ? { ...source.letterSpacing } : undefined,
+          fontStyle: source.fontStyle ? { ...source.fontStyle } : undefined,
+          textTransform: source.textTransform ? { ...source.textTransform } : undefined,
+        };
+      });
       updateStylesheet(rules, state.globalEnabled);
       debouncedSave(() => {
         saveSiteConfig({ version: 1, origin: state.origin, enabled: state.globalEnabled, rules }).catch(console.error);

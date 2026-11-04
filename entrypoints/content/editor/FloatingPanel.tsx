@@ -16,7 +16,8 @@ const PANEL_CSS = `
 *, *::before, *::after { box-sizing: border-box; }
 .fl-panel {
   position: fixed;
-  width: 420px;
+  width: 460px;
+  max-width: calc(100vw - 16px);
   max-height: 85vh;
   background: #ffffff;
   border: 1px solid #e2e8f0;
@@ -143,8 +144,8 @@ const PANEL_CSS = `
 }
 .fl-expand-btn:hover { background: var(--fl-hover); }
 .fl-element-controls { padding: 0 12px 12px; display: flex; flex-direction: column; gap: 10px; background: var(--fl-surface); }
-.fl-control-row { display: flex; align-items: center; gap: 6px; }
-.fl-control-label { font-size: 11px; color: var(--fl-text-muted); min-width: 72px; }
+.fl-control-row { display: flex; align-items: center; gap: 6px; overflow: hidden; min-width: 0; }
+.fl-control-label { font-size: 11px; color: var(--fl-text-muted); min-width: 68px; flex-shrink: 0; }
 .fl-control-input {
   flex: 1; padding: 4px 7px; border: 1px solid var(--fl-border); border-radius: 5px;
   background: var(--fl-input-bg); color: var(--fl-text); font-size: 12px; outline: none;
@@ -161,18 +162,19 @@ const PANEL_CSS = `
   display: flex; align-items: center; justify-content: center;
 }
 .fl-reset-btn:hover { background: var(--fl-hover); color: var(--fl-danger); }
-.fl-font-picker { position: relative; }
+.fl-font-picker { position: relative; min-width: 0; overflow: hidden; }
 .fl-font-picker-trigger {
-  width: 100%; padding: 6px 10px; border: 1px solid var(--fl-border); border-radius: 6px;
+  width: 100%; min-width: 0; padding: 6px 10px; border: 1px solid var(--fl-border); border-radius: 6px;
   background: var(--fl-input-bg); color: var(--fl-text); font-size: 12px; cursor: pointer;
-  text-align: left; display: flex; align-items: center; justify-content: space-between;
+  text-align: left; display: flex; align-items: center; justify-content: space-between; overflow: hidden;
 }
+.fl-font-picker-trigger span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fl-font-picker-trigger:hover { border-color: var(--fl-accent); }
 .fl-font-dropdown {
   position: absolute; top: calc(100% + 4px); left: 0; right: 0;
   background: var(--fl-bg); border: 1px solid var(--fl-border); border-radius: 8px;
   box-shadow: 0 8px 30px rgba(0,0,0,0.15); z-index: 100; overflow: hidden;
-  max-height: 280px; display: flex; flex-direction: column;
+  max-height: 360px; display: flex; flex-direction: column;
 }
 .fl-font-search { padding: 8px; border-bottom: 1px solid var(--fl-separator); flex-shrink: 0; }
 .fl-font-search-input {
@@ -181,11 +183,16 @@ const PANEL_CSS = `
 }
 .fl-font-search-input:focus { border-color: var(--fl-accent); }
 .fl-font-list { overflow-y: auto; flex: 1; }
-.fl-font-list-item { display: flex; align-items: center; padding: 7px 10px; cursor: pointer; gap: 8px; }
+.fl-font-list-item {
+  display: flex; align-items: center; padding: 7px 10px; cursor: pointer; gap: 8px;
+  border-bottom: 1px solid var(--fl-separator);
+}
 .fl-font-list-item:hover { background: var(--fl-hover); }
-.fl-font-list-item--selected { background: rgba(59,110,240,0.1); }
-.fl-font-name { flex: 1; font-size: 12px; }
-.fl-font-cat-badge { font-size: 10px; color: var(--fl-text-muted); padding: 1px 5px; border-radius: 3px; background: var(--fl-surface-2); }
+.fl-font-list-item--selected { background: rgba(59,110,240,0.08); }
+.fl-font-preview-name { font-size: 14px; font-weight: 400; color: var(--fl-text); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.fl-font-preview-sample { font-size: 11px; color: var(--fl-text-muted); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; opacity: 0.7; }
+.fl-font-preview-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.fl-font-cat-badge { font-size: 10px; color: var(--fl-text-muted); padding: 1px 5px; border-radius: 3px; background: var(--fl-surface-2); flex-shrink: 0; align-self: flex-start; }
 .fl-presets { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
 .fl-preset-item {
   display: flex; align-items: center; padding: 8px 10px;
@@ -210,9 +217,17 @@ const PANEL_CSS = `
 .fl-empty { padding: 24px; text-align: center; color: var(--fl-text-muted); font-size: 12px; }
 .fl-loading { padding: 20px; text-align: center; color: var(--fl-text-muted); font-size: 12px; }
 .fl-section-title { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--fl-text-muted); padding: 10px 12px 4px; }
+.fl-copy-to { border: 1px solid var(--fl-border); border-radius: 8px; padding: 10px; background: var(--fl-surface); }
+.fl-copy-to-title { font-size: 11px; font-weight: 600; color: var(--fl-text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+.fl-copy-to-list { display: flex; flex-direction: column; gap: 2px; max-height: 160px; overflow-y: auto; }
+.fl-copy-to-item { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+.fl-copy-to-item:hover { background: var(--fl-hover); }
+.fl-copy-to-item input[type=checkbox] { flex-shrink: 0; cursor: pointer; }
+.fl-copy-to-tag { font-family: monospace; font-size: 11px; color: var(--fl-accent); min-width: 32px; flex-shrink: 0; }
+.fl-copy-to-label { color: var(--fl-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fl-add-custom { padding: 8px 12px; border-top: 1px solid var(--fl-separator); }
-.fl-input-row { display: flex; gap: 6px; padding: 8px 12px; }
-.fl-input-full { flex: 1; padding: 6px 8px; border: 1px solid var(--fl-border); border-radius: 5px; background: var(--fl-input-bg); color: var(--fl-text); font-size: 12px; outline: none; }
+.fl-input-row { display: flex; gap: 6px; padding: 8px 12px; flex-wrap: wrap; }
+.fl-input-full { flex: 1; min-width: 0; padding: 6px 8px; border: 1px solid var(--fl-border); border-radius: 5px; background: var(--fl-input-bg); color: var(--fl-text); font-size: 12px; outline: none; }
 .fl-input-full:focus { border-color: var(--fl-accent); }
 `;
 
@@ -286,6 +301,9 @@ export function FloatingPanel({ shadowRoot, onClose }: Props) {
       style={{ left: position.x, top: position.y, pointerEvents: 'all' }}
       role="dialog"
       aria-label="Font Lab Typography Editor"
+      onClick={e => e.stopPropagation()}
+      onPointerDown={e => e.stopPropagation()}
+      onMouseDown={e => e.stopPropagation()}
     >
       <div className="fl-header" onMouseDown={onMouseDown}>
         <div className="fl-header-left">

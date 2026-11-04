@@ -17,7 +17,10 @@ export default defineContentScript({
 
     const host = document.createElement('div');
     host.id = 'font-lab-root';
-    host.style.cssText = 'position: fixed; z-index: 2147483647; top: 0; left: 0; width: 0; height: 0; pointer-events: none;';
+    // Full-viewport fixed overlay so click events land on the host, not the page.
+    // pointer-events: none so the page underneath is still interactive everywhere
+    // except where .fl-panel sets pointer-events: all.
+    host.style.cssText = 'position: fixed; z-index: 2147483647; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; overflow: visible;';
     document.documentElement.appendChild(host);
 
     const shadowRoot = host.attachShadow({ mode: 'open' });

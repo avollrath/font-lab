@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useTypographyStore } from '../../../src/stores/typographyStore';
 import { FontPicker } from './FontPicker';
 import { TypographyControls } from './TypographyControls';
@@ -10,7 +11,32 @@ interface Props {
 }
 
 export function ElementRule({ rule, expanded, onToggleExpand }: Props) {
-  const { toggleRule, resetRule, removeCustomRule } = useTypographyStore();
+  const { toggleRule, resetRule, removeCustomRule, copyRuleTo, rules } = useTypographyStore();
+  const [showCopyTo, setShowCopyTo] = useState(false);
+  const [selectedTargets, setSelectedTargets] = useState<Set<string>>(new Set());
+
+  const otherRules = rules.filter(r => r.id !== rule.id);
+
+  const toggleTarget = (id: string) => {
+    setSelectedTargets(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const handleCopy = () => {
+    if (selectedTargets.size === 0) return;
+    copyRuleTo(rule.id, Array.from(selectedTargets));
+    setShowCopyTo(false);
+    setSelectedTargets(new Set());
+  };
+
+  const hasStyle = !!(
+    rule.fontFamily?.enabled || rule.fontSize?.enabled ||
+    rule.fontWeight?.enabled || rule.lineHeight?.enabled ||
+    rule.letterSpacing?.enabled || rule.fontStyle?.enabled || rule.textTransform?.enabled
+  );
 
   return (
     <div className="fl-element-row">
@@ -35,7 +61,17 @@ export function ElementRule({ rule, expanded, onToggleExpand }: Props) {
         <div className="fl-element-controls">
           <FontPicker rule={rule} />
           <TypographyControls rule={rule} />
-          <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+
+          <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+            {hasStyle && (
+              <button
+                className="fl-btn"
+                style={{ fontSize: '11px' }}
+                onClick={e => { e.stopPropagation(); setShowCopyTo(v => !v); setSelectedTargets(new Set()); }}
+              >
+                Copy style to…
+              </button>
+            )}
             <button
               className="fl-btn"
               style={{ fontSize: '11px' }}
@@ -53,6 +89,42 @@ export function ElementRule({ rule, expanded, onToggleExpand }: Props) {
               </button>
             )}
           </div>
+
+          {showCopyTo && (
+            <div className="fl-copy-to">
+              <div className="fl-copy-to-title">Copy style to:</div>
+              <div className="fl-copy-to-list">
+                {otherRules.map(r => (
+                  <label key={r.id} className="fl-copy-to-item">
+                    <input
+                      type="checkbox"
+                      checked={selectedTargets.has(r.id)}
+                      onChange={() => toggleTarget(r.id)}
+                    />
+                    <span className="fl-copy-to-tag">{r.selector}</span>
+                    <span className="fl-copy-to-label">{r.label}</span>
+                  </label>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
+                <button
+                  className="fl-btn fl-btn--primary"
+                  style={{ fontSize: '11px' }}
+                  disabled={selectedTargets.size === 0}
+                  onClick={handleCopy}
+                >
+                  Apply to {selectedTargets.size > 0 ? selectedTargets.size : ''} element{selectedTargets.size !== 1 ? 's' : ''}
+                </button>
+                <button
+                  className="fl-btn"
+                  style={{ fontSize: '11px' }}
+                  onClick={() => { setShowCopyTo(false); setSelectedTargets(new Set()); }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
