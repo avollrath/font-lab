@@ -117,7 +117,7 @@ const PANEL_CSS = `
   padding: 2px 6px; border: 1px solid var(--fl-border); background: transparent;
   color: var(--fl-text-muted); border-radius: 4px; font-size: 10px; cursor: pointer;
 }
-.fl-category-btn:hover { background: var(--fl-hover); color: var(--fl-text); border-color: var(--fl-accent); }
+.fl-category-btn:hover, .fl-category-btn--active { background: var(--fl-accent); color: white; border-color: var(--fl-accent); }
 .fl-element-row { border-bottom: 1px solid var(--fl-separator); }
 .fl-element-header {
   display: flex; align-items: center; padding: 8px 12px; gap: 8px; cursor: pointer;

@@ -5,191 +5,244 @@ interface Props {
   rule: TypographyRule;
 }
 
-const WEIGHTS = [100, 200, 300, 400, 500, 600, 700, 800, 900];
+const WEIGHTS = [
+  { value: 100, label: 'Thin 100' },
+  { value: 200, label: 'Extra Light 200' },
+  { value: 300, label: 'Light 300' },
+  { value: 400, label: 'Regular 400' },
+  { value: 500, label: 'Medium 500' },
+  { value: 600, label: 'Semi Bold 600' },
+  { value: 700, label: 'Bold 700' },
+  { value: 800, label: 'Extra Bold 800' },
+  { value: 900, label: 'Black 900' },
+];
+
+interface ControlRowProps {
+  label: string;
+  active: boolean;
+  onToggle: () => void;
+  onClear: () => void;
+  children: React.ReactNode;
+}
+
+function ControlRow({ label, active, onToggle, onClear, children }: ControlRowProps) {
+  return (
+    <div className="fl-control-row">
+      <label style={{ display: 'flex', alignItems: 'center', gap: '4px', minWidth: '72px', cursor: 'pointer' }}>
+        <input
+          type="checkbox"
+          checked={active}
+          onChange={onToggle}
+          style={{ flexShrink: 0, cursor: 'pointer' }}
+        />
+        <span className="fl-control-label" style={{ minWidth: 'unset' }}>{label}</span>
+      </label>
+      <div style={{ flex: 1, display: 'flex', gap: '4px', alignItems: 'center', opacity: active ? 1 : 0.45 }}>
+        {children}
+      </div>
+      {active && (
+        <button className="fl-reset-btn" onClick={onClear} title="Remove override">✕</button>
+      )}
+    </div>
+  );
+}
 
 export function TypographyControls({ rule }: Props) {
   const { updateRule } = useTypographyStore();
 
-  const update = (field: keyof TypographyRule, enabled: boolean, value: unknown) => {
-    updateRule(rule.id, { [field]: { enabled, value } } as Partial<TypographyRule>);
+  const setSize = (value: number | string, unit?: 'px' | 'rem' | 'em') => {
+    const currentUnit = rule.fontSize?.value?.unit ?? 'px';
+    const currentValue = rule.fontSize?.value?.value ?? 16;
+    if (typeof value === 'number') {
+      updateRule(rule.id, { fontSize: { enabled: true, value: { value, unit: unit ?? currentUnit } } });
+    } else {
+      const u = value as 'px' | 'rem' | 'em';
+      updateRule(rule.id, { fontSize: { enabled: true, value: { value: currentValue, unit: u } } });
+    }
   };
 
-  const clear = (field: keyof TypographyRule) => {
-    updateRule(rule.id, { [field]: undefined } as Partial<TypographyRule>);
+  const setWeight = (weight: number) => {
+    updateRule(rule.id, { fontWeight: { enabled: true, value: weight } });
   };
 
   return (
     <>
       {/* Font Size */}
-      <div className="fl-control-row">
-        <span className="fl-control-label">Font size</span>
-        {rule.fontSize && (
-          <input
-            type="checkbox"
-            checked={rule.fontSize.enabled}
-            onChange={e => update('fontSize', e.target.checked, rule.fontSize!.value)}
-            title="Enable font size"
-          />
-        )}
+      <ControlRow
+        label="Size"
+        active={!!rule.fontSize?.enabled}
+        onToggle={() => {
+          if (rule.fontSize?.enabled) {
+            updateRule(rule.id, { fontSize: { ...rule.fontSize, enabled: false } });
+          } else if (rule.fontSize) {
+            updateRule(rule.id, { fontSize: { ...rule.fontSize, enabled: true } });
+          } else {
+            updateRule(rule.id, { fontSize: { enabled: true, value: { value: 16, unit: 'px' } } });
+          }
+        }}
+        onClear={() => updateRule(rule.id, { fontSize: undefined })}
+      >
         <input
           type="number"
           className="fl-control-input"
           style={{ width: '60px', flex: 'none' }}
           placeholder="16"
+          min={0}
+          step={1}
           value={rule.fontSize?.value?.value ?? ''}
-          disabled={rule.fontSize ? !rule.fontSize.enabled : false}
+          disabled={!rule.fontSize?.enabled}
           onChange={e => {
             const v = parseFloat(e.target.value);
-            if (!isNaN(v)) update('fontSize', true, { value: v, unit: rule.fontSize?.value?.unit ?? 'px' });
+            if (!isNaN(v) && v >= 0) setSize(v);
           }}
         />
         <select
           className="fl-control-select"
           value={rule.fontSize?.value?.unit ?? 'px'}
-          disabled={rule.fontSize ? !rule.fontSize.enabled : false}
-          onChange={e => update('fontSize', true, { value: rule.fontSize?.value?.value ?? 16, unit: e.target.value })}
+          disabled={!rule.fontSize?.enabled}
+          onChange={e => setSize(e.target.value)}
         >
           <option value="px">px</option>
           <option value="rem">rem</option>
           <option value="em">em</option>
         </select>
-        {rule.fontSize && (
-          <button className="fl-reset-btn" onClick={() => clear('fontSize')} title="Clear">✕</button>
-        )}
-      </div>
+      </ControlRow>
 
       {/* Font Weight */}
-      <div className="fl-control-row">
-        <span className="fl-control-label">Weight</span>
-        {rule.fontWeight && (
-          <input
-            type="checkbox"
-            checked={rule.fontWeight.enabled}
-            onChange={e => update('fontWeight', e.target.checked, rule.fontWeight!.value)}
-            title="Enable font weight"
-          />
-        )}
+      <ControlRow
+        label="Weight"
+        active={!!rule.fontWeight?.enabled}
+        onToggle={() => {
+          if (rule.fontWeight?.enabled) {
+            updateRule(rule.id, { fontWeight: { ...rule.fontWeight, enabled: false } });
+          } else if (rule.fontWeight) {
+            updateRule(rule.id, { fontWeight: { ...rule.fontWeight, enabled: true } });
+          } else {
+            updateRule(rule.id, { fontWeight: { enabled: true, value: 400 } });
+          }
+        }}
+        onClear={() => updateRule(rule.id, { fontWeight: undefined })}
+      >
         <select
           className="fl-control-select"
           style={{ flex: 1 }}
-          value={rule.fontWeight?.value ?? ''}
-          disabled={rule.fontWeight ? !rule.fontWeight.enabled : false}
-          onChange={e => {
-            const v = parseInt(e.target.value);
-            if (!isNaN(v)) update('fontWeight', true, v);
-          }}
+          value={rule.fontWeight?.value ?? 400}
+          disabled={!rule.fontWeight?.enabled}
+          onChange={e => setWeight(parseInt(e.target.value))}
         >
-          <option value="">Select...</option>
-          {WEIGHTS.map(w => <option key={w} value={w}>{w}</option>)}
+          {WEIGHTS.map(w => (
+            <option key={w.value} value={w.value}>{w.label}</option>
+          ))}
         </select>
-        {rule.fontWeight && (
-          <button className="fl-reset-btn" onClick={() => clear('fontWeight')} title="Clear">✕</button>
-        )}
-      </div>
+      </ControlRow>
 
       {/* Line Height */}
-      <div className="fl-control-row">
-        <span className="fl-control-label">Line height</span>
-        {rule.lineHeight && (
-          <input
-            type="checkbox"
-            checked={rule.lineHeight.enabled}
-            onChange={e => update('lineHeight', e.target.checked, rule.lineHeight!.value)}
-            title="Enable line height"
-          />
-        )}
+      <ControlRow
+        label="Line height"
+        active={!!rule.lineHeight?.enabled}
+        onToggle={() => {
+          if (rule.lineHeight?.enabled) {
+            updateRule(rule.id, { lineHeight: { ...rule.lineHeight, enabled: false } });
+          } else if (rule.lineHeight) {
+            updateRule(rule.id, { lineHeight: { ...rule.lineHeight, enabled: true } });
+          } else {
+            updateRule(rule.id, { lineHeight: { enabled: true, value: '1.5' } });
+          }
+        }}
+        onClear={() => updateRule(rule.id, { lineHeight: undefined })}
+      >
         <input
           type="text"
           className="fl-control-input"
           placeholder="1.5"
           value={rule.lineHeight?.value ?? ''}
-          disabled={rule.lineHeight ? !rule.lineHeight.enabled : false}
-          onChange={e => update('lineHeight', true, e.target.value)}
+          disabled={!rule.lineHeight?.enabled}
+          onChange={e => updateRule(rule.id, { lineHeight: { enabled: true, value: e.target.value } })}
         />
-        {rule.lineHeight && (
-          <button className="fl-reset-btn" onClick={() => clear('lineHeight')} title="Clear">✕</button>
-        )}
-      </div>
+      </ControlRow>
 
       {/* Letter Spacing */}
-      <div className="fl-control-row">
-        <span className="fl-control-label">Letter space</span>
-        {rule.letterSpacing && (
-          <input
-            type="checkbox"
-            checked={rule.letterSpacing.enabled}
-            onChange={e => update('letterSpacing', e.target.checked, rule.letterSpacing!.value)}
-            title="Enable letter spacing"
-          />
-        )}
+      <ControlRow
+        label="Tracking"
+        active={!!rule.letterSpacing?.enabled}
+        onToggle={() => {
+          if (rule.letterSpacing?.enabled) {
+            updateRule(rule.id, { letterSpacing: { ...rule.letterSpacing, enabled: false } });
+          } else if (rule.letterSpacing) {
+            updateRule(rule.id, { letterSpacing: { ...rule.letterSpacing, enabled: true } });
+          } else {
+            updateRule(rule.id, { letterSpacing: { enabled: true, value: '0px' } });
+          }
+        }}
+        onClear={() => updateRule(rule.id, { letterSpacing: undefined })}
+      >
         <input
           type="text"
           className="fl-control-input"
           placeholder="0px"
           value={rule.letterSpacing?.value ?? ''}
-          disabled={rule.letterSpacing ? !rule.letterSpacing.enabled : false}
-          onChange={e => update('letterSpacing', true, e.target.value)}
+          disabled={!rule.letterSpacing?.enabled}
+          onChange={e => updateRule(rule.id, { letterSpacing: { enabled: true, value: e.target.value } })}
         />
-        {rule.letterSpacing && (
-          <button className="fl-reset-btn" onClick={() => clear('letterSpacing')} title="Clear">✕</button>
-        )}
-      </div>
+      </ControlRow>
 
       {/* Font Style */}
-      <div className="fl-control-row">
-        <span className="fl-control-label">Style</span>
-        {rule.fontStyle && (
-          <input
-            type="checkbox"
-            checked={rule.fontStyle.enabled}
-            onChange={e => update('fontStyle', e.target.checked, rule.fontStyle!.value)}
-            title="Enable font style"
-          />
-        )}
+      <ControlRow
+        label="Style"
+        active={!!rule.fontStyle?.enabled}
+        onToggle={() => {
+          if (rule.fontStyle?.enabled) {
+            updateRule(rule.id, { fontStyle: { ...rule.fontStyle, enabled: false } });
+          } else if (rule.fontStyle) {
+            updateRule(rule.id, { fontStyle: { ...rule.fontStyle, enabled: true } });
+          } else {
+            updateRule(rule.id, { fontStyle: { enabled: true, value: 'italic' } });
+          }
+        }}
+        onClear={() => updateRule(rule.id, { fontStyle: undefined })}
+      >
         <select
           className="fl-control-select"
           style={{ flex: 1 }}
-          value={rule.fontStyle?.value ?? ''}
-          disabled={rule.fontStyle ? !rule.fontStyle.enabled : false}
-          onChange={e => update('fontStyle', true, e.target.value)}
+          value={rule.fontStyle?.value ?? 'normal'}
+          disabled={!rule.fontStyle?.enabled}
+          onChange={e => updateRule(rule.id, { fontStyle: { enabled: true, value: e.target.value as 'normal' | 'italic' } })}
         >
-          <option value="">Select...</option>
           <option value="normal">Normal</option>
           <option value="italic">Italic</option>
         </select>
-        {rule.fontStyle && (
-          <button className="fl-reset-btn" onClick={() => clear('fontStyle')} title="Clear">✕</button>
-        )}
-      </div>
+      </ControlRow>
 
       {/* Text Transform */}
-      <div className="fl-control-row">
-        <span className="fl-control-label">Transform</span>
-        {rule.textTransform && (
-          <input
-            type="checkbox"
-            checked={rule.textTransform.enabled}
-            onChange={e => update('textTransform', e.target.checked, rule.textTransform!.value)}
-            title="Enable text transform"
-          />
-        )}
+      <ControlRow
+        label="Transform"
+        active={!!rule.textTransform?.enabled}
+        onToggle={() => {
+          if (rule.textTransform?.enabled) {
+            updateRule(rule.id, { textTransform: { ...rule.textTransform, enabled: false } });
+          } else if (rule.textTransform) {
+            updateRule(rule.id, { textTransform: { ...rule.textTransform, enabled: true } });
+          } else {
+            updateRule(rule.id, { textTransform: { enabled: true, value: 'uppercase' } });
+          }
+        }}
+        onClear={() => updateRule(rule.id, { textTransform: undefined })}
+      >
         <select
           className="fl-control-select"
           style={{ flex: 1 }}
-          value={rule.textTransform?.value ?? ''}
-          disabled={rule.textTransform ? !rule.textTransform.enabled : false}
-          onChange={e => update('textTransform', true, e.target.value)}
+          value={rule.textTransform?.value ?? 'none'}
+          disabled={!rule.textTransform?.enabled}
+          onChange={e => updateRule(rule.id, {
+            textTransform: { enabled: true, value: e.target.value as 'none' | 'uppercase' | 'lowercase' | 'capitalize' }
+          })}
         >
-          <option value="">Select...</option>
           <option value="none">None</option>
           <option value="uppercase">Uppercase</option>
           <option value="lowercase">Lowercase</option>
           <option value="capitalize">Capitalize</option>
         </select>
-        {rule.textTransform && (
-          <button className="fl-reset-btn" onClick={() => clear('textTransform')} title="Clear">✕</button>
-        )}
-      </div>
+      </ControlRow>
     </>
   );
 }

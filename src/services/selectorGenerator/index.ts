@@ -20,9 +20,12 @@ export function generateSelector(element: Element): string {
       if (document.querySelectorAll(classSelector).length === 1) {
         return classSelector;
       }
-      const simpleSelector = `${tag}.${CSS.escape(stableClasses[0])}`;
-      if (document.querySelectorAll(simpleSelector).length === 1) {
-        return simpleSelector;
+      const firstClass = stableClasses[0];
+      if (firstClass) {
+        const simpleSelector = `${tag}.${CSS.escape(firstClass)}`;
+        if (document.querySelectorAll(simpleSelector).length === 1) {
+          return simpleSelector;
+        }
       }
     } catch {
       // Invalid selector, continue
@@ -44,9 +47,8 @@ export function generateSelector(element: Element): string {
       const sel = `#${CSS.escape(parent.id)} > ${tag}`;
       if (document.querySelectorAll(sel).length === 1) return sel;
     }
-    const parentClass = Array.from(parent.classList)
-      .filter(cls => cls.length > 1)
-      .slice(0, 1)[0];
+    const parentClasses = Array.from(parent.classList).filter(cls => cls.length > 1);
+    const parentClass = parentClasses[0];
     if (parentClass) {
       const sel = `${parentTag}.${CSS.escape(parentClass)} > ${tag}`;
       try {
