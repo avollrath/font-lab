@@ -65,16 +65,20 @@ export function FontPicker({ rule }: Props) {
   const currentFont = rule.fontFamily?.value ?? '';
   const isEnabled = rule.fontFamily?.enabled ?? false;
 
-  // Close on outside click using composedPath() (Shadow DOM-safe)
+  // Outside-click detection inside the shadow root.
+  // We can't use document (our host-level stopper blocks that), so we find
+  // the shadow root from the containerRef and listen there instead.
   useEffect(() => {
     if (!open) return;
-    const handlePointerDown = (e: MouseEvent) => {
+    const sr = containerRef.current?.getRootNode() as ShadowRoot | null;
+    if (!sr || !(sr instanceof ShadowRoot)) return;
+    const handlePointerDown = (e: Event) => {
       const path = e.composedPath();
       if (containerRef.current && path.includes(containerRef.current)) return;
       setOpen(false);
     };
-    document.addEventListener('pointerdown', handlePointerDown, true);
-    return () => document.removeEventListener('pointerdown', handlePointerDown, true);
+    sr.addEventListener('pointerdown', handlePointerDown, true);
+    return () => sr.removeEventListener('pointerdown', handlePointerDown, true);
   }, [open]);
 
   // Load preview for currently selected font immediately
