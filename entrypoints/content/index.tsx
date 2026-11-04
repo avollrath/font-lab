@@ -27,18 +27,6 @@ export default defineContentScript({
     // (not the panel React div) so it works regardless of which child element
     // the event target is — including the font dropdown and its items.
     // We use capture=true so we intercept before any bubbling handler sees it.
-    // Block all events originating inside the shadow root from reaching
-    // host-page document/window listeners (capture phase, before bubbling).
-    function stopIfInsideShadow(e: Event) {
-      const path = e.composedPath();
-      if (path.includes(host) && path[0] !== host) {
-        e.stopPropagation();
-      }
-    }
-    ['mousedown','mouseup','click','pointerdown','pointerup',
-     'keydown','keyup','touchstart','touchend','focusin','focusout'
-    ].forEach(type => document.addEventListener(type, stopIfInsideShadow, true));
-
     const container = document.createElement('div');
     container.id = 'font-lab-container';
     shadowRoot.appendChild(container);

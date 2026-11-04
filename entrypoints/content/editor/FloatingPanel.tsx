@@ -301,9 +301,9 @@ export function FloatingPanel({ shadowRoot, onClose }: Props) {
       style={{ left: position.x, top: position.y, pointerEvents: 'all' }}
       role="dialog"
       aria-label="Font Lab Typography Editor"
-      onClick={e => e.stopPropagation()}
-      onPointerDown={e => e.stopPropagation()}
-      onMouseDown={e => e.stopPropagation()}
+      onClick={e => { e.stopPropagation(); e.nativeEvent.stopImmediatePropagation(); }}
+      onPointerDown={e => { e.stopPropagation(); e.nativeEvent.stopImmediatePropagation(); }}
+      onMouseDown={e => { e.stopPropagation(); e.nativeEvent.stopImmediatePropagation(); }}
     >
       <div className="fl-header" onMouseDown={onMouseDown}>
         <div className="fl-header-left">

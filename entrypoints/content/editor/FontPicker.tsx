@@ -65,20 +65,19 @@ export function FontPicker({ rule }: Props) {
   const currentFont = rule.fontFamily?.value ?? '';
   const isEnabled = rule.fontFamily?.enabled ?? false;
 
-  // Outside-click detection inside the shadow root.
-  // We can't use document (our host-level stopper blocks that), so we find
-  // the shadow root from the containerRef and listen there instead.
+  // Close dropdown when clicking outside. We use the shadow root as the listener
+  // target (not document) so it works whether or not host-page events are stopped.
   useEffect(() => {
     if (!open) return;
-    const sr = containerRef.current?.getRootNode() as ShadowRoot | null;
-    if (!sr || !(sr instanceof ShadowRoot)) return;
+    const sr = containerRef.current?.getRootNode();
+    const target = (sr instanceof ShadowRoot ? sr : document) as EventTarget;
     const handlePointerDown = (e: Event) => {
       const path = e.composedPath();
       if (containerRef.current && path.includes(containerRef.current)) return;
       setOpen(false);
     };
-    sr.addEventListener('pointerdown', handlePointerDown, true);
-    return () => sr.removeEventListener('pointerdown', handlePointerDown, true);
+    target.addEventListener('pointerdown', handlePointerDown, true);
+    return () => target.removeEventListener('pointerdown', handlePointerDown, true);
   }, [open]);
 
   // Load preview for currently selected font immediately
