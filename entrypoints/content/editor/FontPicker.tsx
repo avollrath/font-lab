@@ -58,26 +58,28 @@ export function FontPicker({ rule }: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('');
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; width: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const observeItem = useFontPreviewObserver(open);
 
   const results = searchFonts(query, category || undefined).slice(0, 80);
   const currentFont = rule.fontFamily?.value ?? '';
   const isEnabled = rule.fontFamily?.enabled ?? false;
 
-  // Close dropdown when clicking outside. We use the shadow root as the listener
-  // target (not document) so it works whether or not host-page events are stopped.
+  // Close dropdown on click outside the container.
+  // We attach to the shadow root in capture phase so we see all clicks first.
+  // composedPath() always includes every ancestor even through shadow boundaries.
   useEffect(() => {
     if (!open) return;
-    const sr = containerRef.current?.getRootNode();
-    const target = (sr instanceof ShadowRoot ? sr : document) as EventTarget;
-    const handlePointerDown = (e: Event) => {
-      const path = e.composedPath();
-      if (containerRef.current && path.includes(containerRef.current)) return;
+    const node = containerRef.current?.getRootNode();
+    const target: EventTarget = node instanceof ShadowRoot ? node : document;
+    const handleMouseDown = (e: Event) => {
+      if (containerRef.current && e.composedPath().includes(containerRef.current)) return;
       setOpen(false);
     };
-    target.addEventListener('pointerdown', handlePointerDown, true);
-    return () => target.removeEventListener('pointerdown', handlePointerDown, true);
+    target.addEventListener('mousedown', handleMouseDown, true);
+    return () => target.removeEventListener('mousedown', handleMouseDown, true);
   }, [open]);
 
   // Load preview for currently selected font immediately
@@ -118,9 +120,17 @@ export function FontPicker({ rule }: Props) {
             />
           )}
           <button
+            ref={triggerRef}
             className="fl-font-picker-trigger"
             style={currentFont ? { fontFamily: `"${currentFont}", sans-serif` } : undefined}
-            onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
+            onClick={e => {
+              e.stopPropagation();
+              if (!open && triggerRef.current) {
+                const r = triggerRef.current.getBoundingClientRect();
+                setDropdownPos({ top: r.bottom + 4, left: r.left, width: r.width });
+              }
+              setOpen(o => !o);
+            }}
           >
             <span>{currentFont || 'Select font…'}</span>
             <span style={{ opacity: 0.5, fontSize: '10px', flexShrink: 0, marginLeft: '4px' }}>▾</span>
@@ -130,8 +140,13 @@ export function FontPicker({ rule }: Props) {
           )}
         </div>
 
-        {open && (
-          <div className="fl-font-dropdown" onPointerDown={e => e.stopPropagation()}>
+        {open && dropdownPos && (
+          <div
+            className="fl-font-dropdown"
+            onPointerDown={e => e.stopPropagation()}
+            onMouseDown={e => { e.stopPropagation(); e.nativeEvent.stopImmediatePropagation(); }}
+            style={{ position: 'fixed', top: dropdownPos.top, left: dropdownPos.left, width: dropdownPos.width, zIndex: 2147483647 }}
+          >
             {/* Search */}
             <div className="fl-font-search">
               <input

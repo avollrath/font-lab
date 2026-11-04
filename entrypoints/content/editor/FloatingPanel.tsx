@@ -144,7 +144,7 @@ const PANEL_CSS = `
 }
 .fl-expand-btn:hover { background: var(--fl-hover); }
 .fl-element-controls { padding: 0 12px 12px; display: flex; flex-direction: column; gap: 10px; background: var(--fl-surface); }
-.fl-control-row { display: flex; align-items: center; gap: 6px; overflow: hidden; min-width: 0; }
+.fl-control-row { display: flex; align-items: center; gap: 6px; min-width: 0; overflow: visible; }
 .fl-control-label { font-size: 11px; color: var(--fl-text-muted); min-width: 68px; flex-shrink: 0; }
 .fl-control-input {
   flex: 1; padding: 4px 7px; border: 1px solid var(--fl-border); border-radius: 5px;
@@ -162,7 +162,7 @@ const PANEL_CSS = `
   display: flex; align-items: center; justify-content: center;
 }
 .fl-reset-btn:hover { background: var(--fl-hover); color: var(--fl-danger); }
-.fl-font-picker { position: relative; min-width: 0; overflow: hidden; }
+.fl-font-picker { position: relative; min-width: 0; overflow: visible; }
 .fl-font-picker-trigger {
   width: 100%; min-width: 0; padding: 6px 10px; border: 1px solid var(--fl-border); border-radius: 6px;
   background: var(--fl-input-bg); color: var(--fl-text); font-size: 12px; cursor: pointer;
@@ -171,9 +171,8 @@ const PANEL_CSS = `
 .fl-font-picker-trigger span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fl-font-picker-trigger:hover { border-color: var(--fl-accent); }
 .fl-font-dropdown {
-  position: absolute; top: calc(100% + 4px); left: 0; right: 0;
   background: var(--fl-bg); border: 1px solid var(--fl-border); border-radius: 8px;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.15); z-index: 100; overflow: hidden;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.15); z-index: 2147483647; overflow: hidden;
   max-height: 360px; display: flex; flex-direction: column;
 }
 .fl-font-search { padding: 8px; border-bottom: 1px solid var(--fl-separator); flex-shrink: 0; }
