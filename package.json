@@ -1,0 +1,43 @@
+{
+  "name": "font-lab",
+  "version": "0.1.0",
+  "description": "Experiment with Google Fonts and typography on any website, instantly.",
+  "private": true,
+  "scripts": {
+    "dev": "wxt",
+    "build": "wxt build",
+    "build:prod": "wxt build --mode production",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src entrypoints --ext .ts,.tsx",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^5.0.2",
+    "lucide-react": "^0.468.0"
+  },
+  "devDependencies": {
+    "wxt": "^0.21.5",
+    "@wxt-dev/module-react": "^1.2.2",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8",
+    "@vitest/coverage-v8": "^2.1.8",
+    "eslint": "^9.17.0",
+    "@typescript-eslint/eslint-plugin": "^8.19.0",
+    "@typescript-eslint/parser": "^8.19.0",
+    "eslint-plugin-react": "^7.37.3",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "prettier": "^3.4.2",
+    "@playwright/test": "^1.49.1",
+    "jsdom": "^25.0.1",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/user-event": "^14.5.2",
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^6.0.6"
+  }
+}

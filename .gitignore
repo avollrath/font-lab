@@ -1,0 +1,10 @@
+node_modules/
+.wxt/
+.output/
+*.local
+.env*
+dist/
+coverage/
+test-results/
+playwright-report/
+*.tsbuildinfo
