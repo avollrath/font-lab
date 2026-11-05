@@ -11,14 +11,16 @@ export function SidePanel() {
   const [activeSection, setActiveSection] = useState<Section>('elements');
   const [currentOrigin, setCurrentOrigin] = useState('');
 
-  // Get the active tab's origin and initialize
+  // Get the active tab's origin and register with background
   useEffect(() => {
     async function getOrigin() {
       try {
         const tabs = await browser.tabs.query({ active: true, currentWindow: true });
-        // Filter out the side panel tab itself and other extension pages
+        // Filter out the side panel itself and other extension/chrome pages
         const tab = tabs.find(t => t.url && !t.url.startsWith('chrome') && !t.url.startsWith('about'));
-        if (tab?.url) {
+        if (tab?.id && tab?.url) {
+          // Tell background which tab we're associated with
+          browser.runtime.sendMessage({ type: 'REGISTER_TAB', tabId: tab.id }).catch(() => {});
           try {
             const origin = new URL(tab.url).origin;
             setCurrentOrigin(origin);
@@ -37,6 +39,11 @@ export function SidePanel() {
       if (testOrigin) {
         setCurrentOrigin(testOrigin);
         await initialize(testOrigin);
+        // Also register via tab query for the test tab
+        browser.tabs.query({}).then(tabs => {
+          const tab = tabs.find(t => t.url?.includes(new URL(testOrigin).hostname));
+          if (tab?.id) browser.runtime.sendMessage({ type: 'REGISTER_TAB', tabId: tab.id }).catch(() => {});
+        }).catch(() => {});
       }
     }
     getOrigin();

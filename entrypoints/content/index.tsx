@@ -1,5 +1,6 @@
 import { updateStylesheet, removeStylesheet } from '../../src/services/typographyEngine';
 import { loadSiteConfig } from '../../src/services/storage';
+import type { TypographyRule } from '../../src/types';
 
 export default defineContentScript({
   matches: ['<all_urls>'],
@@ -15,12 +16,15 @@ export default defineContentScript({
     // Tell the side panel which origin this tab is showing
     browser.runtime.sendMessage({ type: 'PAGE_NAVIGATED', origin }).catch(() => {});
 
-    // Listen for style commands from the side panel
-    browser.runtime.onMessage.addListener((message: { type: string }) => {
-      if (message.type === 'SYNC_STYLES') {
-        loadSiteConfig(origin).then(config => {
-          updateStylesheet(config.rules, config.enabled);
-        }).catch(() => {});
+    // Listen for commands from background/side panel
+    browser.runtime.onMessage.addListener((message: {
+      type: string;
+      rules?: TypographyRule[];
+      globalEnabled?: boolean;
+    }) => {
+      if (message.type === 'APPLY_STYLES' && message.rules) {
+        // Rules pushed directly — no storage round-trip needed
+        updateStylesheet(message.rules, message.globalEnabled ?? true);
       }
       if (message.type === 'REMOVE_STYLES') {
         removeStylesheet();

@@ -38,12 +38,16 @@ let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
 function debouncedSave(fn: () => void, delay = 300) {
   if (saveTimeout) clearTimeout(saveTimeout);
-  saveTimeout = setTimeout(() => { fn(); notifyContentScript(); }, delay);
+  saveTimeout = setTimeout(fn, delay);
 }
 
-function notifyContentScript() {
+function pushStylesToTab(rules: TypographyRule[], globalEnabled: boolean) {
   try {
-    browser.runtime.sendMessage({ type: 'STYLES_UPDATED' }).catch(() => {});
+    browser.runtime.sendMessage({
+      type: 'PUSH_STYLES',
+      rules,
+      globalEnabled,
+    }).catch(() => {});
   } catch (_) {}
 }
 
@@ -99,6 +103,7 @@ export const useTypographyStore = create<TypographyState>((set, get) => ({
       }
 
       updateStylesheet(rules, state.globalEnabled);
+      pushStylesToTab(rules, state.globalEnabled);
 
       const { origin, globalEnabled } = state;
       debouncedSave(() => {
@@ -155,20 +160,16 @@ export const useTypographyStore = create<TypographyState>((set, get) => ({
     const { origin } = get();
     const rules = DEFAULT_RULES.map(r => ({ ...r }));
     updateStylesheet(rules, true);
+    pushStylesToTab(rules, true);
     set({ rules, globalEnabled: true });
-    saveSiteConfig({ version: 1, origin, enabled: true, rules }).then(() => notifyContentScript()).catch(console.error);
+    saveSiteConfig({ version: 1, origin, enabled: true, rules }).catch(console.error);
   },
 
   setGlobalEnabled: (enabled: boolean) => {
     set(state => {
       updateStylesheet(state.rules, enabled);
-      const config: SiteConfiguration = {
-        version: 1,
-        origin: state.origin,
-        enabled,
-        rules: state.rules,
-      };
-      saveSiteConfig(config).then(() => notifyContentScript()).catch(console.error);
+      pushStylesToTab(state.rules, enabled);
+      saveSiteConfig({ version: 1, origin: state.origin, enabled, rules: state.rules }).catch(console.error);
       return { globalEnabled: enabled };
     });
   },
@@ -177,6 +178,7 @@ export const useTypographyStore = create<TypographyState>((set, get) => ({
     set(state => {
       const rules = [...state.rules, rule];
       updateStylesheet(rules, state.globalEnabled);
+      pushStylesToTab(rules, state.globalEnabled);
       debouncedSave(() => {
         saveSiteConfig({ version: 1, origin: state.origin, enabled: state.globalEnabled, rules }).catch(console.error);
       });
@@ -202,6 +204,7 @@ export const useTypographyStore = create<TypographyState>((set, get) => ({
         };
       });
       updateStylesheet(rules, state.globalEnabled);
+      pushStylesToTab(rules, state.globalEnabled);
       debouncedSave(() => {
         saveSiteConfig({ version: 1, origin: state.origin, enabled: state.globalEnabled, rules }).catch(console.error);
       });
@@ -213,6 +216,7 @@ export const useTypographyStore = create<TypographyState>((set, get) => ({
     set(state => {
       const rules = state.rules.filter(r => r.id !== id);
       updateStylesheet(rules, state.globalEnabled);
+      pushStylesToTab(rules, state.globalEnabled);
       debouncedSave(() => {
         saveSiteConfig({ version: 1, origin: state.origin, enabled: state.globalEnabled, rules }).catch(console.error);
       });
@@ -238,6 +242,7 @@ export const useTypographyStore = create<TypographyState>((set, get) => ({
     const { origin, globalEnabled } = get();
     const rules = preset.rules.map(r => ({ ...r }));
     updateStylesheet(rules, globalEnabled);
+    pushStylesToTab(rules, globalEnabled);
     set({ rules });
     saveSiteConfig({ version: 1, origin, enabled: globalEnabled, rules }).catch(console.error);
   },
@@ -256,6 +261,7 @@ export const useTypographyStore = create<TypographyState>((set, get) => ({
         r.category === category ? { ...r, enabled: true } : r
       );
       updateStylesheet(rules, state.globalEnabled);
+      pushStylesToTab(rules, state.globalEnabled);
       debouncedSave(() => {
         saveSiteConfig({ version: 1, origin: state.origin, enabled: state.globalEnabled, rules }).catch(console.error);
       });
@@ -269,6 +275,7 @@ export const useTypographyStore = create<TypographyState>((set, get) => ({
         r.category === category ? { ...r, enabled: false } : r
       );
       updateStylesheet(rules, state.globalEnabled);
+      pushStylesToTab(rules, state.globalEnabled);
       debouncedSave(() => {
         saveSiteConfig({ version: 1, origin: state.origin, enabled: state.globalEnabled, rules }).catch(console.error);
       });
