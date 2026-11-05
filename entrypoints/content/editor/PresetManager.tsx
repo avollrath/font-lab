@@ -13,39 +13,55 @@ export function PresetManager() {
   };
 
   return (
-    <div className="fl-presets">
-      <div className="fl-section-title">Save current as preset</div>
-      <div className="fl-input-row">
+    <div className="fp-presets">
+      <div className="fp-save-preset-form">
         <input
-          className="fl-input-full"
-          placeholder="Preset name..."
+          className="fp-text-input"
+          style={{ flex: 1 }}
+          placeholder="Preset name…"
           value={name}
           onChange={e => setName(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleSave()}
         />
-        <button className="fl-btn fl-btn--primary" onClick={handleSave}>Save</button>
+        <button
+          className="fp-btn fp-btn--primary fp-btn--sm"
+          onClick={handleSave}
+          disabled={!name.trim()}
+        >
+          Save current
+        </button>
       </div>
 
       {presets.length === 0 ? (
-        <div className="fl-empty">No saved presets yet. Customize typography and save as a preset.</div>
+        <div className="fp-empty-state">
+          <div className="fp-empty-state-icon">◫</div>
+          <div>No saved presets yet.</div>
+          <div style={{ fontSize: '11px' }}>Customize typography and save as a preset above.</div>
+        </div>
       ) : (
         <>
-          <div className="fl-section-title">Saved presets</div>
+          <div className="fp-preset-list-label">Saved presets</div>
           {presets.map(preset => (
-            <div key={preset.id} className="fl-preset-item">
-              <span className="fl-preset-name">{preset.name}</span>
-              <button className="fl-btn" style={{ fontSize: '11px' }} onClick={() => applyPreset(preset)}>Apply</button>
-              {!preset.isBuiltIn && (
+            <div key={preset.id} className="fp-preset-row">
+              <span className="fp-preset-name">{preset.name}</span>
+              <div className="fp-preset-actions">
                 <button
-                  className="fl-btn fl-btn--danger"
-                  style={{ fontSize: '11px' }}
-                  onClick={() => {
-                    if (window.confirm(`Delete preset "${preset.name}"?`)) deletePreset(preset.id);
-                  }}
+                  className="fp-btn fp-btn--sm"
+                  onClick={() => applyPreset(preset)}
                 >
-                  Delete
+                  Apply
                 </button>
-              )}
+                {!preset.isBuiltIn && (
+                  <button
+                    className="fp-btn fp-btn--sm fp-btn--danger"
+                    onClick={() => {
+                      if (window.confirm(`Delete preset "${preset.name}"?`)) deletePreset(preset.id);
+                    }}
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </>

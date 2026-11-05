@@ -12,19 +12,16 @@ export function ExportPanel() {
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(css);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback
       const ta = document.createElement('textarea');
       ta.value = css;
       document.body.appendChild(ta);
       ta.select();
       document.execCommand('copy');
       document.body.removeChild(ta);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const handleDownload = () => {
@@ -32,35 +29,38 @@ export function ExportPanel() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'font-lab-styles.css';
+    a.download = 'fontpickle-styles.css';
     a.click();
     URL.revokeObjectURL(url);
   };
 
   return (
-    <div className="fl-export">
-      <div className="fl-section-title">Export CSS</div>
+    <div className="fp-export">
+      <label className="fp-export-option">
+        <input
+          type="checkbox"
+          checked={includeImportant}
+          onChange={e => setIncludeImportant(e.target.checked)}
+        />
+        Include <code style={{ fontFamily: 'monospace', fontSize: '11px' }}>!important</code>
+      </label>
 
       {activeRules.length === 0 ? (
-        <div className="fl-empty">No active typography rules to export. Enable some rules first.</div>
+        <div className="fp-empty-state">
+          <div className="fp-empty-state-icon">⌗</div>
+          <div>No active rules to export.</div>
+          <div style={{ fontSize: '11px' }}>Enable some elements and set their fonts first.</div>
+        </div>
       ) : (
         <>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--fl-text-muted)' }}>
-            <input
-              type="checkbox"
-              checked={includeImportant}
-              onChange={e => setIncludeImportant(e.target.checked)}
-            />
-            Include !important
-          </label>
-
-          <pre className="fl-export-code">{css}</pre>
-
-          <div className="fl-export-actions">
-            <button className="fl-btn fl-btn--primary" onClick={handleCopy}>
-              {copied ? 'Copied!' : 'Copy CSS'}
+          <pre className="fp-code-preview">{css}</pre>
+          <div className="fp-export-actions">
+            <button className="fp-btn fp-btn--primary fp-btn--sm" onClick={handleCopy}>
+              {copied ? '✓ Copied!' : 'Copy CSS'}
             </button>
-            <button className="fl-btn" onClick={handleDownload}>Download .css</button>
+            <button className="fp-btn fp-btn--sm" onClick={handleDownload}>
+              Download .css
+            </button>
           </div>
         </>
       )}

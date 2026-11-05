@@ -1,25 +1,27 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTypographyStore } from '../../src/stores/typographyStore';
-import { ElementList } from '../content/editor/ElementList';
+import { ElementSelector } from '../content/editor/ElementSelector';
+import { TypographyInspector } from '../content/editor/TypographyInspector';
 import { PresetManager } from '../content/editor/PresetManager';
 import { ExportPanel } from '../content/editor/ExportPanel';
+import { ElementPicker } from '../content/editor/ElementPicker';
 
 type Section = 'elements' | 'presets' | 'export';
 
 export function SidePanel() {
-  const { globalEnabled, setGlobalEnabled, resetAll, initialize, isLoading } = useTypographyStore();
+  const { globalEnabled, setGlobalEnabled, resetAll, initialize, isLoading, rules } = useTypographyStore();
   const [activeSection, setActiveSection] = useState<Section>('elements');
   const [currentOrigin, setCurrentOrigin] = useState('');
+  const [selectedRuleId, setSelectedRuleId] = useState<string | null>(null);
+  const [pickerActive, setPickerActive] = useState(false);
 
   // Get the active tab's origin and register with background
   useEffect(() => {
     async function getOrigin() {
       try {
         const tabs = await browser.tabs.query({ active: true, currentWindow: true });
-        // Filter out the side panel itself and other extension/chrome pages
         const tab = tabs.find(t => t.url && !t.url.startsWith('chrome') && !t.url.startsWith('about'));
         if (tab?.id && tab?.url) {
-          // Tell background which tab we're associated with
           browser.runtime.sendMessage({ type: 'REGISTER_TAB', tabId: tab.id }).catch(() => {});
           try {
             const origin = new URL(tab.url).origin;
@@ -31,7 +33,7 @@ export function SidePanel() {
           }
         }
       } catch (e) {
-        console.error('Font Lab: failed to get active tab', e);
+        console.error('FontPickle: failed to get active tab', e);
       }
       // Fallback for testing: accept ?origin= param
       const params = new URLSearchParams(window.location.search);
@@ -39,7 +41,6 @@ export function SidePanel() {
       if (testOrigin) {
         setCurrentOrigin(testOrigin);
         await initialize(testOrigin);
-        // Also register via tab query for the test tab
         browser.tabs.query({}).then(tabs => {
           const tab = tabs.find(t => t.url?.includes(new URL(testOrigin).hostname));
           if (tab?.id) browser.runtime.sendMessage({ type: 'REGISTER_TAB', tabId: tab.id }).catch(() => {});
@@ -54,6 +55,7 @@ export function SidePanel() {
     const handleMessage = (message: { type: string; origin?: string }) => {
       if (message.type === 'PAGE_NAVIGATED' && message.origin && message.origin !== currentOrigin) {
         setCurrentOrigin(message.origin);
+        setSelectedRuleId(null);
         initialize(message.origin);
       }
     };
@@ -61,35 +63,54 @@ export function SidePanel() {
     return () => browser.runtime.onMessage.removeListener(handleMessage);
   }, [currentOrigin, initialize]);
 
-  const handleReset = () => {
-    if (window.confirm('Reset all typography changes for this site?')) resetAll();
-  };
+  // Auto-select first rule when loaded
+  useEffect(() => {
+    if (!isLoading && rules.length > 0 && !selectedRuleId) {
+      const firstEnabled = rules.find(r => r.enabled);
+      setSelectedRuleId(firstEnabled?.id ?? rules[0].id);
+    }
+  }, [isLoading, rules, selectedRuleId]);
+
+  const handleReset = useCallback(() => {
+    if (window.confirm('Reset all typography changes for this site?')) {
+      resetAll();
+      setSelectedRuleId(null);
+    }
+  }, [resetAll]);
 
   const isRestrictedPage = !currentOrigin ||
     currentOrigin.startsWith('chrome://') ||
     currentOrigin.startsWith('chrome-extension://');
 
+  const selectedRule = rules.find(r => r.id === selectedRuleId) ?? null;
+
+  const activeCount = rules.filter(r => r.enabled).length;
+
   return (
-    <div className="fl-app">
-      <header className="fl-header">
-        <div className="fl-header-left">
-          <div className="fl-logo">F</div>
-          <span className="fl-title">Font Lab</span>
-          <span className={`fl-status${globalEnabled && !isRestrictedPage ? ' fl-status--active' : ''}`} />
+    <div className="fp-app">
+      {/* Header */}
+      <header className="fp-header">
+        <div className="fp-header-left">
+          <div className="fp-logo">F</div>
+          <span className="fp-title">FontPickle</span>
+          <span
+            className={`fp-status${globalEnabled && !isRestrictedPage ? ' fp-status--active' : ''}`}
+            title={globalEnabled ? 'Styles active' : 'Styles disabled'}
+          />
         </div>
-        <div className="fl-header-actions">
+        <div className="fp-header-actions">
           <button
-            className={`fl-btn-icon${globalEnabled ? ' fl-btn-icon--active' : ''}`}
+            className={`fp-icon-btn${globalEnabled ? ' fp-icon-btn--active' : ''}`}
             onClick={() => setGlobalEnabled(!globalEnabled)}
-            title={globalEnabled ? 'Disable styles' : 'Enable styles'}
+            title={globalEnabled ? 'Disable all styles' : 'Enable all styles'}
             disabled={isRestrictedPage}
           >
             {globalEnabled ? '●' : '○'}
           </button>
           <button
-            className="fl-btn-icon"
+            className="fp-icon-btn"
             onClick={handleReset}
-            title="Reset all"
+            title="Reset all styles for this site"
             disabled={isRestrictedPage}
           >
             ↺
@@ -97,41 +118,57 @@ export function SidePanel() {
         </div>
       </header>
 
-      {isRestrictedPage ? (
-        <div className="fl-empty">
-          <div style={{ fontSize: '32px', marginBottom: '12px' }}>🚫</div>
-          <div>Font Lab can't run on this page.</div>
-          <div style={{ marginTop: '6px', fontSize: '11px' }}>Navigate to a regular website to get started.</div>
-        </div>
-      ) : (
-        <>
-          <nav className="fl-nav" role="tablist">
-            {(['elements', 'presets', 'export'] as Section[]).map(s => (
-              <button
-                key={s}
-                className={`fl-nav-tab${activeSection === s ? ' fl-nav-tab--active' : ''}`}
-                onClick={() => setActiveSection(s)}
-                role="tab"
-                aria-selected={activeSection === s}
-              >
-                {s === 'elements' ? 'Elements' : s === 'presets' ? 'Presets' : 'Export'}
-              </button>
-            ))}
-          </nav>
+      {/* Nav */}
+      <nav className="fp-nav" role="tablist">
+        {(['elements', 'presets', 'export'] as Section[]).map(s => (
+          <button
+            key={s}
+            className={`fp-nav-tab${activeSection === s ? ' fp-nav-tab--active' : ''}`}
+            onClick={() => setActiveSection(s)}
+            role="tab"
+            aria-selected={activeSection === s}
+          >
+            {s === 'elements' ? `Elements${activeCount > 0 ? ` · ${activeCount}` : ''}` : s === 'presets' ? 'Presets' : 'Export'}
+          </button>
+        ))}
+      </nav>
 
-          <main className="fl-content" role="tabpanel">
-            {isLoading ? (
-              <div className="fl-loading">Loading…</div>
-            ) : (
-              <>
-                {activeSection === 'elements' && <ElementList onPickerActivate={() => {}} />}
-                {activeSection === 'presets' && <PresetManager />}
-                {activeSection === 'export' && <ExportPanel />}
-              </>
+      {/* Content */}
+      <main className="fp-content" role="tabpanel">
+        {isRestrictedPage ? (
+          <div className="fp-restricted">
+            <div className="fp-restricted-icon">⊘</div>
+            <div className="fp-restricted-title">Can't run here</div>
+            <div className="fp-restricted-sub">Navigate to a regular website to use FontPickle.</div>
+          </div>
+        ) : isLoading ? (
+          <div className="fp-loading">Loading…</div>
+        ) : (
+          <>
+            {pickerActive && (
+              <ElementPicker
+                onSelect={() => setPickerActive(false)}
+                onCancel={() => setPickerActive(false)}
+              />
             )}
-          </main>
-        </>
-      )}
+
+            {activeSection === 'elements' && (
+              <ElementSelector
+                selectedRuleId={selectedRuleId}
+                onSelect={setSelectedRuleId}
+                onPickerActivate={() => setPickerActive(true)}
+              />
+            )}
+
+            {activeSection === 'elements' && (
+              <TypographyInspector rule={selectedRule} />
+            )}
+
+            {activeSection === 'presets' && <PresetManager />}
+            {activeSection === 'export' && <ExportPanel />}
+          </>
+        )}
+      </main>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 /**
- * Browser integration test for Font Lab side panel extension.
+ * Browser integration test for FontPickle side panel extension.
  * Run: node test-extension.mjs
  */
 import { chromium } from 'playwright';
@@ -38,7 +38,7 @@ const page = await context.newPage();
 await page.goto('https://example.com');
 await sleep(1000);
 
-console.log('\n=== Font Lab Side Panel Integration Tests ===\n');
+console.log('\n=== FontPickle Side Panel Integration Tests ===\n');
 
 // Get extension ID
 let extensionId = null;
@@ -48,110 +48,109 @@ for (const sw of context.serviceWorkers()) {
 }
 log(!!extensionId, `Extension loaded (ID: ${extensionId})`);
 
-// Open side panel by navigating to it directly (since we can't click toolbar in automation)
-// The side panel is accessible as chrome-extension://ID/sidepanel.html
+// Open side panel
 const sidePanelUrl = `chrome-extension://${extensionId}/sidepanel.html?origin=https://example.com`;
 const spPage = await context.newPage();
 await spPage.goto(sidePanelUrl);
-await sleep(1500);
+await sleep(2000);
 
 await spPage.screenshot({ path: 'test-ss-sp-1.png' });
 
 // --- Test: Side panel renders ---
-const appVisible = await spPage.locator('.fl-app').isVisible().catch(() => false);
+const appVisible = await spPage.locator('.fp-app').isVisible().catch(() => false);
 log(appVisible, 'Side panel app renders');
 
-const headerVisible = await spPage.locator('.fl-header').isVisible().catch(() => false);
+const headerVisible = await spPage.locator('.fp-header').isVisible().catch(() => false);
 log(headerVisible, 'Header is visible');
 
 // --- Test: Navigation tabs ---
-const elemTab = spPage.locator('.fl-nav-tab').first();
+const elemTab = spPage.locator('.fp-nav-tab').first();
 const tabVisible = await elemTab.isVisible().catch(() => false);
 log(tabVisible, 'Nav tabs visible');
 
 // --- Test: Elements list renders ---
-await spPage.locator('.fl-nav-tab').first().click();
+await spPage.locator('.fp-nav-tab').first().click();
 await sleep(300);
-const categories = await spPage.locator('.fl-category').count();
-log(categories > 0, `Elements list shows ${categories} categories`);
+const elementRows = await spPage.locator('.fp-element-row').count();
+log(elementRows > 0, `Elements list shows ${elementRows} rows`);
 
 await spPage.screenshot({ path: 'test-ss-sp-2.png' });
 
-// --- Test: Expand element ---
-const firstRow = spPage.locator('.fl-element-header').first();
+// --- Test: Selecting a row updates inspector ---
+const firstRow = spPage.locator('.fp-element-row').first();
 await firstRow.click();
 await sleep(300);
-const controlsVisible = await spPage.locator('.fl-element-controls').isVisible().catch(() => false);
-log(controlsVisible, 'Element expands to show controls');
+const inspectorVisible = await spPage.locator('.fp-inspector').isVisible().catch(() => false);
+log(inspectorVisible, 'Inspector is visible after selecting a row');
 
 // --- Test: Font picker opens ---
-if (controlsVisible) {
-  await spPage.locator('.fl-font-picker-trigger').first().click();
-  await sleep(400);
-  const dropdownOpen = await spPage.locator('.fl-font-dropdown').isVisible().catch(() => false);
-  log(dropdownOpen, 'Font dropdown opens');
+if (inspectorVisible) {
+  await spPage.locator('.fp-font-btn').first().click();
+  await sleep(500);
+  const popoverOpen = await spPage.locator('.fp-popover').isVisible().catch(() => false);
+  log(popoverOpen, 'Font picker popover opens');
 
   await spPage.screenshot({ path: 'test-ss-sp-3.png' });
 
-  if (dropdownOpen) {
-    // --- Test: Category button doesn't close dropdown ---
-    const catBtns = spPage.locator('.fl-font-dropdown .fl-category-btn');
+  if (popoverOpen) {
+    // --- Test: Category button doesn't close popover ---
+    const catBtns = spPage.locator('.fp-popover .fp-cat-btn');
     const catCount = await catBtns.count();
     if (catCount > 1) {
       await catBtns.nth(1).click();
       await sleep(300);
-      const stillOpen = await spPage.locator('.fl-font-dropdown').isVisible().catch(() => false);
-      log(stillOpen, 'Dropdown stays open after clicking category button');
+      const stillOpen = await spPage.locator('.fp-popover').isVisible().catch(() => false);
+      log(stillOpen, 'Popover stays open after clicking category button');
     }
 
-    // --- Test: Select a font ---
-    const fontItems = spPage.locator('.fl-font-list-item');
+    // --- Test: Font list has items ---
+    const fontItems = spPage.locator('.fp-font-item');
     const itemCount = await fontItems.count();
     log(itemCount > 0, `Font list has ${itemCount} items`);
 
     if (itemCount > 0) {
-      const fontName = await fontItems.first().locator('.fl-font-preview-name').textContent();
+      const fontName = await fontItems.first().locator('.fp-font-name').textContent();
       await fontItems.first().click();
       await sleep(400);
 
-      const dropdownClosed = !(await spPage.locator('.fl-font-dropdown').isVisible().catch(() => true));
-      log(dropdownClosed, `Selecting "${fontName}" closes the dropdown`);
+      const popoverClosed = !(await spPage.locator('.fp-popover').isVisible().catch(() => true));
+      log(popoverClosed, `Selecting "${fontName}" closes the popover`);
 
-      const triggerText = await spPage.locator('.fl-font-picker-trigger span').first().textContent();
-      log(triggerText === fontName, `Trigger shows selected font: "${triggerText}"`);
+      const btnText = await spPage.locator('.fp-font-btn .fp-font-btn-text').first().textContent();
+      log(btnText === fontName, `Font button shows selected font: "${btnText}"`);
     }
 
     await spPage.screenshot({ path: 'test-ss-sp-4.png' });
   }
 }
 
-// --- Test: Toggle enable/disable ---
-const toggleBtn = spPage.locator('.fl-btn-icon').first();
+// --- Test: Toggle enable/disable global ---
+const toggleBtn = spPage.locator('.fp-icon-btn').first();
 await toggleBtn.click();
 await sleep(300);
-const statusAfterToggle = await spPage.locator('.fl-status--active').count();
+const statusAfterToggle = await spPage.locator('.fp-status--active').count();
 log(statusAfterToggle === 0, 'Disabling styles removes active status');
 
 await toggleBtn.click();
 await sleep(300);
-const statusAfterReEnable = await spPage.locator('.fl-status--active').count();
+const statusAfterReEnable = await spPage.locator('.fp-status--active').count();
 log(statusAfterReEnable > 0, 'Re-enabling styles restores active status');
 
 // --- Test: Presets tab ---
-await spPage.locator('.fl-nav-tab').nth(1).click();
+await spPage.locator('.fp-nav-tab').nth(1).click();
 await sleep(300);
-const presetsVisible = await spPage.locator('.fl-presets').isVisible().catch(() => false);
+const presetsVisible = await spPage.locator('.fp-presets').isVisible().catch(() => false);
 log(presetsVisible, 'Presets tab renders');
 
 // --- Test: Export tab ---
-await spPage.locator('.fl-nav-tab').nth(2).click();
+await spPage.locator('.fp-nav-tab').nth(2).click();
 await sleep(300);
-const exportVisible = await spPage.locator('.fl-export').isVisible().catch(() => false);
+const exportVisible = await spPage.locator('.fp-export').isVisible().catch(() => false);
 log(exportVisible, 'Export tab renders');
 
 await spPage.screenshot({ path: 'test-ss-sp-final.png' });
 
-// --- Test: Main page still works (no overlay on the page) ---
+// --- Test: Main page still works ---
 const pageTitle = await page.title();
 log(pageTitle.length > 0, `Main page still functional (title: "${pageTitle}")`);
 const noOverlay = await page.evaluate(() => !document.getElementById('font-lab-root') || !document.getElementById('font-lab-root')?.shadowRoot?.querySelector('.fl-panel'));
