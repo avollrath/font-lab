@@ -192,8 +192,8 @@ export function TypographyInspector({ rule }: Props) {
                 <input
                   type="number"
                   className={`fp-input${!rule.fontSize?.enabled ? ' fp-input--muted' : ''}`}
-                  style={{ width: '52px', flex: 'none' }}
-                  placeholder="Auto"
+                  style={{ minWidth: 0 }}
+                  placeholder="—"
                   min={0}
                   step={1}
                   value={rule.fontSize?.enabled ? (rule.fontSize.value?.value ?? '') : ''}
@@ -206,7 +206,7 @@ export function TypographyInspector({ rule }: Props) {
                 />
                 <select
                   className="fp-select"
-                  style={{ flex: 'none', width: '46px', padding: '5px 3px' }}
+                  style={{ flex: 'none', width: '50px', padding: '5px 3px' }}
                   value={rule.fontSize?.value?.unit ?? 'px'}
                   onChange={e => setSizeUnit(e.target.value as 'px' | 'rem' | 'em')}
                 >
@@ -236,7 +236,7 @@ export function TypographyInspector({ rule }: Props) {
                 <input
                   type="text"
                   className={`fp-input${!rule.lineHeight?.enabled ? ' fp-input--muted' : ''}`}
-                  placeholder="Auto"
+                  placeholder="—"
                   value={rule.lineHeight?.enabled ? (rule.lineHeight.value ?? '') : ''}
                   onChange={e => setLineHeight(e.target.value)}
                   onFocus={() => {
@@ -262,7 +262,7 @@ export function TypographyInspector({ rule }: Props) {
                 <input
                   type="text"
                   className={`fp-input${!rule.letterSpacing?.enabled ? ' fp-input--muted' : ''}`}
-                  placeholder="Auto"
+                  placeholder="—"
                   value={rule.letterSpacing?.enabled ? (rule.letterSpacing.value ?? '') : ''}
                   onChange={e => setTracking(e.target.value)}
                   onFocus={() => {
