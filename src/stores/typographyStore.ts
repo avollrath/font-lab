@@ -38,7 +38,13 @@ let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
 function debouncedSave(fn: () => void, delay = 300) {
   if (saveTimeout) clearTimeout(saveTimeout);
-  saveTimeout = setTimeout(fn, delay);
+  saveTimeout = setTimeout(() => { fn(); notifyContentScript(); }, delay);
+}
+
+function notifyContentScript() {
+  try {
+    browser.runtime.sendMessage({ type: 'STYLES_UPDATED' }).catch(() => {});
+  } catch (_) {}
 }
 
 export const useTypographyStore = create<TypographyState>((set, get) => ({
@@ -150,7 +156,7 @@ export const useTypographyStore = create<TypographyState>((set, get) => ({
     const rules = DEFAULT_RULES.map(r => ({ ...r }));
     updateStylesheet(rules, true);
     set({ rules, globalEnabled: true });
-    saveSiteConfig({ version: 1, origin, enabled: true, rules }).catch(console.error);
+    saveSiteConfig({ version: 1, origin, enabled: true, rules }).then(() => notifyContentScript()).catch(console.error);
   },
 
   setGlobalEnabled: (enabled: boolean) => {
@@ -162,7 +168,7 @@ export const useTypographyStore = create<TypographyState>((set, get) => ({
         enabled,
         rules: state.rules,
       };
-      saveSiteConfig(config).catch(console.error);
+      saveSiteConfig(config).then(() => notifyContentScript()).catch(console.error);
       return { globalEnabled: enabled };
     });
   },

@@ -6,7 +6,7 @@ export default defineConfig({
     name: 'Font Lab',
     description: 'Experiment with Google Fonts and typography on any website, instantly.',
     version: '0.1.0',
-    permissions: ['storage', 'activeTab', 'scripting'],
+    permissions: ['storage', 'activeTab', 'scripting', 'sidePanel'],
     host_permissions: ['https://fonts.googleapis.com/*', 'https://fonts.gstatic.com/*', '<all_urls>'],
     action: {
       default_icon: {

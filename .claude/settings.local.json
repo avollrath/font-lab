@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx vitest *)",
+      "Bash(npx wxt *)",
+      "Bash(ls \"C:/Users/zeeph/AppData/Local/ms-playwright/\" 2>&1)",
+      "Read(//c/Users/zeeph/AppData/Local/ms-playwright/**)",
+      "Bash(node test-extension.mjs)",
+      "Bash(node -e ' *)",
+      "Bash(node -e \"const wxt = require\\('./node_modules/wxt/dist/index.cjs'\\); console.log\\(Object.keys\\(wxt\\)\\)\")",
+      "Bash(node -e \"const d=require\\('/dev/stdin'\\); console.log\\(d.version\\)\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(d['version']\\)\")",
+      "Bash(node -e \"const d=JSON.parse\\(require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\)\\); console.log\\(JSON.stringify\\(d, null, 2\\)\\)\")"
+    ]
+  }
+}

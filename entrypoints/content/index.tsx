@@ -1,68 +1,31 @@
-import ReactDOM from 'react-dom/client';
-import { FloatingPanel } from './editor/FloatingPanel';
-import { updateStylesheet } from '../../src/services/typographyEngine';
+import { updateStylesheet, removeStylesheet } from '../../src/services/typographyEngine';
 import { loadSiteConfig } from '../../src/services/storage';
 
 export default defineContentScript({
   matches: ['<all_urls>'],
   runAt: 'document_end',
   main() {
-    if (document.getElementById('font-lab-root')) return;
-
     const origin = window.location.origin;
 
+    // Restore saved styles immediately on page load
     loadSiteConfig(origin).then(config => {
       updateStylesheet(config.rules, config.enabled);
     }).catch(() => {});
 
-    const host = document.createElement('div');
-    host.id = 'font-lab-root';
-    host.style.cssText = 'position: fixed; z-index: 2147483647; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; overflow: visible;';
-    document.documentElement.appendChild(host);
+    // Tell the side panel which origin this tab is showing
+    browser.runtime.sendMessage({ type: 'PAGE_NAVIGATED', origin }).catch(() => {});
 
-    const shadowRoot = host.attachShadow({ mode: 'open' });
-
-    // Stop ALL native events that originate inside the shadow root from reaching
-    // the host page's document/window listeners. We do this at the shadow root
-    // (not the panel React div) so it works regardless of which child element
-    // the event target is — including the font dropdown and its items.
-    // We use capture=true so we intercept before any bubbling handler sees it.
-    const container = document.createElement('div');
-    container.id = 'font-lab-container';
-    shadowRoot.appendChild(container);
-
-    let isOpen = false;
-    let reactRoot: ReactDOM.Root | null = null;
-
-    function openPanel() {
-      if (!reactRoot) {
-        reactRoot = ReactDOM.createRoot(container);
-      }
-      isOpen = true;
-      reactRoot.render(
-        <FloatingPanel
-          shadowRoot={shadowRoot}
-          onClose={() => closePanel()}
-        />
-      );
-    }
-
-    function closePanel() {
-      isOpen = false;
-      if (reactRoot) {
-        reactRoot.render(null);
-      }
-    }
-
+    // Listen for style commands from the side panel
     browser.runtime.onMessage.addListener((message: { type: string }) => {
-      if (message.type === 'TOGGLE_PANEL') {
-        if (isOpen) {
-          closePanel();
-        } else {
-          openPanel();
-        }
-        return true;
+      if (message.type === 'SYNC_STYLES') {
+        loadSiteConfig(origin).then(config => {
+          updateStylesheet(config.rules, config.enabled);
+        }).catch(() => {});
       }
+      if (message.type === 'REMOVE_STYLES') {
+        removeStylesheet();
+      }
+      return false;
     });
   },
 });
